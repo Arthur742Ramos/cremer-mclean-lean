@@ -200,7 +200,76 @@ theorem separating_lottery
     (hCI : ConvexIndependent pi) :
     forall i : Fin n, forall s : T i, exists x : Others i -> Real,
       (∑ u : Others i, condDist pi i s u * x u = 0) ∧
-      (forall t : T i, t ≠ s -> 0 < ∑ u : Others i, condDist pi i t u * x u) := sorry
+      (forall t : T i, t ≠ s -> 0 < ∑ u : Others i, condDist pi i t u * x u) := by
+  classical
+  have _ := hpi_sum
+  intro i s
+  by_cases h : ∃ t : T i, t ≠ s
+  · let E := PiLp 2 (fun _ : Others i => ℝ)
+    let φ : (Others i → ℝ) ≃ₗ[ℝ] E :=
+      (WithLp.linearEquiv 2 ℝ (Others i → ℝ)).symm
+    let S : Set (Others i → ℝ) :=
+      {b | ∃ c : T i, c ≠ s ∧ b = condDist pi i c}
+    let K : Set E := convexHull ℝ (φ '' S)
+    have hS : S.Finite := by
+      have hS_eq : S = (fun c => condDist pi i c) '' {c : T i | c ≠ s} := by
+        ext b
+        constructor
+        · rintro ⟨c, hc, rfl⟩
+          exact ⟨c, hc, rfl⟩
+        · rintro ⟨c, hc, rfl⟩
+          exact ⟨c, hc, rfl⟩
+      rw [hS_eq]
+      exact (Set.toFinite _).image _
+    have hK_closed : IsClosed K := (hS.image φ).isClosed_convexHull ℝ
+    have hK_convex : Convex ℝ K := convex_convexHull ℝ _
+    have houtside : φ (condDist pi i s) ∉ K := by
+      intro hmem
+      change φ (condDist pi i s) ∈ convexHull ℝ (φ.toLinearMap '' S) at hmem
+      rw [← LinearMap.image_convexHull φ.toLinearMap S] at hmem
+      obtain ⟨b, hb, hbb⟩ := hmem
+      have hb_eq : b = condDist pi i s := φ.injective hbb
+      subst b
+      exact hCI i s hb
+    obtain ⟨g, a, hg, ha⟩ :=
+      geometric_hahn_banach_point_closed hK_convex hK_closed houtside
+    let f : StrongDual ℝ E := -g
+    let u : ℝ := -a
+    have hf (b : E) (hb : b ∈ K) : f b < u := neg_lt_neg (ha b hb)
+    have hu : u < f (φ (condDist pi i s)) := neg_lt_neg hg
+    let w : Others i → ℝ := fun v => f (φ (Pi.single v 1))
+    have key (y : Others i → ℝ) : f (φ y) = ∑ v, w v * y v := by
+      conv_lhs => rw [pi_eq_sum_univ' y]
+      simp only [map_sum, map_smul, smul_eq_mul]
+      apply Finset.sum_congr rfl
+      intro v _
+      exact mul_comm _ _
+    let x : Others i → ℝ := fun v => f (φ (condDist pi i s)) - w v
+    have expected (t : T i) :
+        ∑ v, condDist pi i t v * x v =
+          f (φ (condDist pi i s)) - f (φ (condDist pi i t)) := by
+      calc
+        ∑ v, condDist pi i t v * x v =
+            (∑ v, condDist pi i t v) * f (φ (condDist pi i s)) -
+              ∑ v, w v * condDist pi i t v := by
+          simp only [x, mul_sub, Finset.sum_sub_distrib, Finset.sum_mul]
+          congr 1
+          apply Finset.sum_congr rfl
+          intro v _
+          exact mul_comm _ _
+        _ = f (φ (condDist pi i s)) - f (φ (condDist pi i t)) := by
+          rw [condDist_sum pi i t hpi_pos, one_mul, ← key]
+    refine ⟨x, ?_, ?_⟩
+    · rw [expected, sub_self]
+    · intro t ht
+      have ht_mem : φ (condDist pi i t) ∈ K :=
+        subset_convexHull ℝ (φ '' S) ⟨condDist pi i t, ⟨t, ht, rfl⟩, rfl⟩
+      rw [expected]
+      exact sub_pos.mpr (lt_trans (hf _ ht_mem) hu)
+  · refine ⟨fun _ => 0, ?_, ?_⟩
+    · simp
+    · intro t ht
+      exact (h ⟨t, ht⟩).elim
 
 theorem bic_of_good_lotteries
     (pi : Profile -> Real) (hpi_pos : forall t, 0 < pi t)
