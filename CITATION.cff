@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "Please cite the immutable repository commit used for verification."
+title: "Cremer-McLean Full Surplus Extraction Theorem in Lean"
+type: software
+authors:
+  - given-names: Arthur Freitas
+    family-names: Ramos
+  - given-names: David Barros
+    family-names: Hulak
+  - given-names: Ruy Jose Guerra Barretto de
+    family-names: Queiroz
+license: BSD-3-Clause
+repository-code: "https://github.com/Arthur742Ramos/cremer-mclean-lean"

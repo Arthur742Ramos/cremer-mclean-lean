@@ -1,0 +1,72 @@
+version: "v0.4"
+project:
+  name: "Cremer-McLean Full Surplus Extraction Theorem"
+  description: >-
+    A Lean 4 formalization of the Cremer-McLean full surplus extraction
+    theorem (Econometrica, 1988): for a single indivisible object with
+    finitely many bidders, finite type spaces, and a correlated joint prior
+    with full support, if every bidder's family of conditional distributions
+    over the others' types is convex independent (no conditional lies in the
+    convex hull of the rest), then there exists a Bayesian incentive
+    compatible, interim individually rational direct mechanism that allocates
+    ex post efficiently and extracts the full surplus: every bidder's interim
+    expected utility is zero, so expected seller revenue equals the expected
+    maximum value. The proof hinges on constructing side-bet lotteries with
+    zero own-conditional expectation and strictly positive cross-conditional
+    expectation, obtained by strict separation of each conditional from the
+    convex hull of the others, scaled to dominate any misreport gain.
+  authors:
+    - "Arthur Freitas Ramos"
+    - "David Barros Hulak"
+    - "Ruy Jose Guerra Barretto de Queiroz"
+  responsible_maintainers:
+    - "Arthur Freitas Ramos"
+    - "David Barros Hulak"
+    - "Ruy Jose Guerra Barretto de Queiroz"
+  license: "BSD-3-Clause"
+repository:
+  role: "substantive-development"
+classification:
+  arxiv: ["econ.TH", "cs.GT"]
+  msc2020: ["91B26"]
+sources:
+  - title: "Full Extraction of the Surplus in Bayesian and Dominant Strategy Auctions"
+    authors: ["Jacques Cremer", "Richard P. McLean"]
+    type: "paper"
+    year: 1988
+    url: "https://www.jstor.org/stable/1913096"
+    relationship: "formalizes"
+    note: >-
+      Econometrica, volume 56, issue 6, pages 1247-1257, November 1988.
+      The development formalizes the Bayesian-Nash full extraction result:
+      under convex independence of the conditional type distributions, a
+      well-chosen auction gives the seller the same expected payoff as under
+      full information about each bidder's willingness to pay. The dominant
+      strategy variant is not claimed.
+    author_endorsement: "not-contacted"
+  - title: "Optimal Selling Strategies under Uncertainty for a Discriminating Monopolist when Demands are Interdependent"
+    authors: ["Jacques Cremer", "Richard P. McLean"]
+    type: "paper"
+    year: 1985
+    url: "http://www.jstor.org/stable/1911240"
+    relationship: "background"
+    note: >-
+      Econometrica, volume 53, issue 2, pages 345-361, March 1985.
+      Precursor developing the lottery construction for the single-buyer
+      (monopolist) setting; cited as background only.
+    author_endorsement: "not-contacted"
+automation:
+  methods:
+    - method: "AI-assisted Lean proof development"
+      system: "OpenAI Codex"
+      role: "Source inspection, proof implementation, compilation, package preparation and kernel replay."
+    - method: "Lean tactic automation"
+      role: "simp, linarith, ring and finite-sum rewrites; no native_decide."
+review:
+  status: "In development: M0 scaffold. Machine verification and independent AI review will be recorded with exact source hashes in evidence/ before any registry submission."
+  human_review: "No human mathematical review or original-author endorsement is claimed."
+  limitations: >-
+    Single indivisible object, finitely many bidders, finite type spaces,
+    full-support correlated prior, nonnegative interdependent values.
+    Bayesian-Nash full extraction only; no dominant-strategy claim, no
+    multi-object or infinite-type claim.
