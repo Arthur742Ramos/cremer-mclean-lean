@@ -1,0 +1,22 @@
+{
+  "source_files_sha256": {
+    "Challenge.lean": "cf5b9c11f6953dcd6c55b98c854c281e9d239dced02b50caed1d426e7764c29c",
+    "CremerMcLean/Basic.lean": "baa4a06e5dcfef63c4ff0562f4c480eddecb22931f40e13420eebbaa640f2fa4",
+    "CremerMcLean.lean": "e560893db531370b0c9bada6996d1870ef8c76712240f6fc7a66289c3f901f56",
+    "Solution.lean": "53b3e7b4c6b4ba7956baf8ad42aefdf58eb0df635038a6a00424bb50db025f9b",
+    "comparator.json": "8d8479336364c589bdd35607e1a5a2e1eb2c261361820294b907008de52a1213",
+    "lake-manifest.json": "6dab6dbef446a74dae4b359ab7e27dd521c203037ba17a9099a9a34c8c942422",
+    "lakefile.toml": "3856dcd66bc8d5846c520e113463668b22537c7908650801495d910f7a8fb7f7",
+    "lean-toolchain": "8dc8d6f560141069d9073e370611716ef77ada0da8ffa37e2149f44b2e63ac7a"
+  },
+  "lean": "leanprover/lean4:v4.35.0-rc2",
+  "mathlib": "065356127b1dc0016f66b7283ce0ce2c4055aa55",
+  "comparison": "three exact theorem statements with named Challenge holes; fifteen genuine unchanged definitions; complete Solution proofs",
+  "verification_kernels": [
+    "Lean default",
+    "nanoda",
+    "con-ron"
+  ],
+  "recorded_at_utc": "2026-10-02T02:51:17.580234+00:00",
+  "local_platform": "macOS arm64; Comparator without Linux bubblewrap"
+}

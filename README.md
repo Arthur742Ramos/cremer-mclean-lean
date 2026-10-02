@@ -10,7 +10,11 @@ theorem** (Crémer & McLean, *Econometrica* 56(6), 1988):
 > there exists a Bayesian incentive compatible, interim individually rational
 > direct mechanism that allocates ex post efficiently and **extracts the full
 > surplus** — every bidder's interim expected utility is zero, so the
-> seller's expected revenue equals the expected maximum value.
+> seller's expected revenue equals the expected welfare of the efficient
+allocation (hence the expected maximum value).
+
+Scope: the Bayesian-Nash version only. The paper's dominant-strategy
+variant is not formalized here.
 
 The proof hinges on the paper's lottery construction: strict separation of
 each conditional distribution from the convex hull of the others yields
@@ -20,14 +24,19 @@ misreport gain while vanishing in truthful expectation.
 
 ## Status
 
-M0 scaffold (in development). Milestones:
+Complete (M0–M7). All milestones are committed and pushed:
 
 - M0: repository scaffold, pinned toolchain, CI
-- M1: core definitions and theorem statements
+- M1: core definitions and theorem statements (3 sorries)
 - M2: convex independence → lottery construction (strict separation core)
 - M3: mechanism construction and Bayesian incentive compatibility
 - M4: interim individual rationality and full surplus extraction
-- M5–M7: Palomar packaging, prose audit, verifier replica
+- M5: Palomar packaging (Challenge/Solution, comparator.json, verify scripts)
+- M6: prose-to-binder metadata audit
+- M7: local Palomar verifier replica green
+
+Build: `lake build` green, zero linter warnings, zero `sorry` in the
+library. Axioms: `propext`, `Classical.choice`, `Quot.sound` only.
 
 ## Layout
 
@@ -56,6 +65,10 @@ lake build
 - Jacques Crémer and Richard P. McLean, "Optimal Selling Strategies under
   Uncertainty for a Discriminating Monopolist when Demands are
   Interdependent," *Econometrica* 53(2):345–361, 1985 (background).
+
+## Authors
+
+Arthur Freitas Ramos, David Barros Hulak, Ruy Jose Guerra Barretto de Queiroz.
 
 ## License
 

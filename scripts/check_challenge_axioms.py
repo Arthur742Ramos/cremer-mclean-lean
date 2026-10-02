@@ -11,7 +11,7 @@ selected = config["theorem_names"] + config["definition_names"]
 source = "module\npublic import Challenge\n" + "".join(
     f"#print axioms {name}\n" for name in selected
 )
-with tempfile.NamedTemporaryFile(mode="w", suffix=".lean", prefix="border-reference-", delete=False) as handle:
+with tempfile.NamedTemporaryFile(mode="w", suffix=".lean", prefix="cremer-mclean-reference-", delete=False) as handle:
     handle.write(source)
     path = Path(handle.name)
 try:
@@ -20,6 +20,9 @@ try:
 finally:
     path.unlink()
 rows = dict(re.findall(r"'([^']+)' depends on axioms:\s*\[([^\]]*)\]", result.stdout))
+noax = set(re.findall(r"'([^']+)' does not depend on any axioms", result.stdout))
+assert not (set(rows) & noax), "duplicate axiom rows"
+rows.update({name: "" for name in noax})
 assert set(rows) == set(selected), rows
 permitted = set(config["permitted_axioms"])
 for name in selected:
@@ -29,4 +32,4 @@ for name in selected:
     else:
         assert used <= permitted, (name, used)
 (ROOT / "evidence/challenge-reference-axioms.log").write_text(result.stdout)
-print("Reference audit: exactly six selected theorem placeholders; all ten definitions genuine")
+print("Reference audit: exactly three selected theorem placeholders; all fifteen definitions genuine")

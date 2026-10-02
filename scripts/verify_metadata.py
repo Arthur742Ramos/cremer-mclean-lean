@@ -16,7 +16,7 @@ assert metadata["project"]["responsible_maintainers"] == authors
 assert metadata["project"]["license"] == "BSD-3-Clause"
 cfg = json.loads((ROOT / "comparator.json").read_text())
 assert [s["lean"] for s in metadata["alignment"]["statements"]] == cfg["theorem_names"]
-assert metadata["classification"]["msc2020"] == ["91B26", "90C05", "03B35"]
+assert metadata["classification"]["msc2020"] == ["91B26"]
 import yaml
 citation = yaml.safe_load((ROOT / "CITATION.cff").read_text())
 assert [a["given-names"] + " " + a["family-names"] for a in citation["authors"]] == authors

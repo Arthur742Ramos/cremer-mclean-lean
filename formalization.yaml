@@ -63,10 +63,34 @@ automation:
     - method: "Lean tactic automation"
       role: "simp, linarith, ring and finite-sum rewrites; no native_decide."
 review:
-  status: "In development: M0 scaffold. Machine verification and independent AI review will be recorded with exact source hashes in evidence/ before any registry submission."
+  status: "Complete: M0-M7 done. Library builds green with zero sorries; axioms propext, Classical.choice, Quot.sound only. Palomar packaging verified with the local comparator replica; evidence/ records exact source hashes."
   human_review: "No human mathematical review or original-author endorsement is claimed."
   limitations: >-
     Single indivisible object, finitely many bidders, finite type spaces,
     full-support correlated prior, nonnegative interdependent values.
     Bayesian-Nash full extraction only; no dominant-strategy claim, no
     multi-object or infinite-type claim.
+alignment:
+  statements:
+    - lean: "CremerMcLean.separating_lottery"
+      description: >-
+        Under convex independence of the conditional type distributions, for
+        each bidder and each reported type there exists a side-bet lottery
+        with zero expected value under the reported type's conditional
+        distribution and strictly positive expected value under every other
+        type's conditional distribution.
+    - lean: "CremerMcLean.bic_of_good_lotteries"
+      description: >-
+        With a uniform positive lower bound delta on cross-conditional lottery
+        expectations and a uniform bound V on value differences across reports,
+        scaling the lotteries by any K >= V / delta + 1 makes the efficient
+        full-value payment mechanism Bayesian incentive compatible, with zero
+        interim utility for truthful reporting.
+    - lean: "CremerMcLean.full_extraction"
+      description: >-
+        Under convex independence of the conditional type distributions, there
+        exist a scale K and lotteries c such that the efficient allocation
+        paired with lottery-augmented payments is Bayesian incentive
+        compatible, interim individually rational, and extracts the full
+        expected surplus: expected seller revenue equals the expected welfare
+        of the efficient allocation.

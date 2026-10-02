@@ -1,56 +1,44 @@
-"""Generate genuine definitions and exact selected theorem statements.
+"""Generate Challenge.lean: genuine definitions, exact comparator theorem statements.
 
-Only the six comparator-selected Challenge theorem proofs are deliberate holes.
-Complete proofs remain in the unchanged Border library imported by Solution.
+Only the comparator-selected theorem proofs are deliberate holes (sorry).
+Complete proofs remain in the unchanged CremerMcLean library imported by Solution.
 """
 import json
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-STATEMENT_MODULES = {
-    "border_feasibility": "Theorem",
-    "feasible_iff_conditional": "Support",
-    "border_conditional_feasibility": "Support",
-    "independent_border_feasibility": "Independent",
-    "independent_border_conditional_feasibility": "Independent",
-    "allocation_le_one": "Support",
-}
 
 
 def render():
     config = json.loads((ROOT / "comparator.json").read_text())
-    auction = (ROOT / "Border/Auction.lean").read_text()
-    # Keep definition source bytes, except its closing namespace terminator.
-    assert auction.endswith("end Border\n")
-    definitions = auction.removesuffix("end Border\n")
+    src = (ROOT / "CremerMcLean" / "Basic.lean").read_text()
+    # Replace each comparator theorem's proof body with a deliberate sorry hole.
+    # The statement (through ':=') is kept byte-identical to the library.
+    for qualified in config["theorem_names"]:
+        name = qualified.removeprefix("CremerMcLean.")
+        m = re.search(r"(?m)^theorem " + re.escape(name) + r"\b[\s\S]*?:=", src)
+        assert m, qualified
+        body_start = m.end()
+        nxt = re.search(
+            r"(?m)^(?:theorem |noncomputable def |def |end\b)", src[body_start:]
+        )
+        body_end = body_start + nxt.start() if nxt else len(src)
+        src = src[:body_start] + " by\n  sorry\n" + src[body_end:]
     module_doc = """/-!
-Compact comparison surface for Border's finite auction feasibility theorem.
-All ten definitions below are genuine, with their exact library bodies.
-Only the six comparator-selected theorem proofs are deliberate statement holes.
-The complete, independently reviewed proofs are in Border, imported by Solution.
+Compact comparison surface for the Cremer-McLean full surplus extraction theorem.
+All definitions below are genuine, with their exact library bodies.
+Only the three comparator-selected theorem proofs are deliberate statement holes.
+The complete, independently reviewed proofs are in CremerMcLean, imported by Solution.
 The official comparator checks their exact contracts; dependency auditing and
 three-kernel passes check the complete Solution rather than these placeholders.
 -/
 """
-    # Lean requires imports before module documentation.
-    insertion = definitions.index("\n@[expose]")
-    definitions = definitions[:insertion] + "\n" + module_doc + definitions[insertion:]
-    statements = []
-    for qualified in config["theorem_names"]:
-        name = qualified.removeprefix("Border.")
-        module = STATEMENT_MODULES[name]
-        source = (ROOT / "Border" / f"{module}.lean").read_text()
-        matches = re.findall(r"(?m)^theorem " + re.escape(name) + r"\b[\s\S]*?:=", source)
-        assert len(matches) == 1, qualified
-        statement = matches[0]
-        if name == "allocation_le_one":
-            statement = "omit [∀ i, Fintype (T i)] in\n" + statement
-        statements.append(
-            f"/- Statement copied from Border/{module}.lean; complete proof in Solution. -/\n"
-            + statement + " by\n  sorry\n"
-        )
-    return definitions + "\n" + "\n".join(statements) + "\nend Border\n"
+    idx = src.index("/-!")
+    src = src[:idx] + module_doc + "\n" + src[idx:]
+    return src
+
 
 if __name__ == "__main__":
     (ROOT / "Challenge.lean").write_text(render())
+    print("wrote Challenge.lean")
