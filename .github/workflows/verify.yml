@@ -1,0 +1,45 @@
+name: Lean verification (M0 scaffold)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cremer-mclean-verify-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LEAN_NUM_THREADS: "2"
+    defaults:
+      run:
+        working-directory: project
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: project
+          persist-credentials: false
+      - name: Install system prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y zstd
+      - name: Install pinned Lean release
+        run: |
+          curl --fail --location --retry 2 \
+            https://github.com/leanprover/lean4/releases/download/v4.35.0-rc2/lean-4.35.0-rc2-linux.tar.zst \
+            -o "$RUNNER_TEMP/lean.tar.zst"
+          printf '%s  %s\n' b67d0e0ba959fc74e186f1b44aebca32d6ecb6a28f8e9a029fc4e9f73398a049 "$RUNNER_TEMP/lean.tar.zst" | sha256sum --check
+          tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/lean-4.35.0-rc2-linux/bin" >> "$GITHUB_PATH"
+      - name: Build and verify
+        run: |
+          chmod +x scripts/verify.sh
+          ./scripts/verify.sh

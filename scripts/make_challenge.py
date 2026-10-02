@@ -29,7 +29,10 @@ def render():
 Compact comparison surface for the Cremer-McLean full surplus extraction theorem.
 All definitions below are genuine, with their exact library bodies.
 Only the three comparator-selected theorem proofs are deliberate statement holes.
-The complete, independently reviewed proofs are in CremerMcLean, imported by Solution.
+The complete, mechanically checked proofs are in CremerMcLean, imported by Solution.
+They were developed with AI assistance and then independently compiled,
+audited for placeholders and axioms, and comparator-checked; no separate
+independent human review of the proofs was performed.
 The official comparator checks their exact contracts; dependency auditing and
 three-kernel passes check the complete Solution rather than these placeholders.
 -/

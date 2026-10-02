@@ -63,7 +63,7 @@ automation:
     - method: "Lean tactic automation"
       role: "simp, linarith, ring and finite-sum rewrites; no native_decide."
 review:
-  status: "Complete: M0-M7 done. Library builds green with zero sorries; axioms propext, Classical.choice, Quot.sound only. Palomar packaging verified with the local comparator replica; evidence/ records exact source hashes."
+  status: "Complete: M0-M7 done. Library builds green with zero sorries; axioms propext, Classical.choice, Quot.sound only. Checking performed (mechanical verification): AI-assisted proof development with independent agent-side compilation, sorry/axiom/comparator audits, and a local Palomar verifier replica; evidence/ records exact source hashes. This status describes mechanical verification only. No distinct independent human review of the proofs was performed."
   human_review: "No human mathematical review or original-author endorsement is claimed."
   limitations: >-
     Single indivisible object, finitely many bidders, finite type spaces,

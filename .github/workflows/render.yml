@@ -1,0 +1,103 @@
+name: Pinned Challenge rendering
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cremer-mclean-render-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      LEAN_NUM_THREADS: "2"
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: project
+          persist-credentials: false
+      - name: Checkout pinned official renderer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: PalomarRegistry/PalomarSubmission
+          ref: 65f0154ed776cd26c224254aa57b379137f28b0d
+          path: pipeline
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.11.10"
+      - name: Install pinned renderer prerequisites
+        run: |
+          python3 -m pip install --require-hashes --no-deps -r pipeline/requirements.txt
+          python3 pipeline/scripts/trusted_download.py \
+            --url https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            --sha256 df0b2b3a439961ffcbb3985214365ffe40f49bc871df04dff268c7d8e21ca8b2
+          mkdir "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          sudo apt-get update -qq
+          sudo apt-get install -y meson ninja-build libcap-dev pkg-config
+          echo "PALOMAR_BWRAP=$(pipeline/scripts/install_bwrap.sh "$RUNNER_TEMP/bwrap-bin")" >> "$GITHUB_ENV"
+      - name: Install exact accepted Lean toolchain
+        run: elan toolchain install "$(cat project/lean-toolchain)"
+      - name: Prepare immutable source and run official renderer
+        working-directory: pipeline
+        env:
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          challenge_hash=$(sha256sum ../project/Challenge.lean | cut -d ' ' -f 1)
+          python3 -m scripts.render_challenge prepare \
+            --repository "$SOURCE_REPOSITORY" --commit "$SOURCE_COMMIT" \
+            --challenge-sha256 "$challenge_hash" --project-path '' \
+            --challenge-path Challenge.lean --solution-path Solution.lean \
+            --comparator-config-path comparator.json --lakefile-path lakefile.toml \
+            --lean-toolchain-path lean-toolchain \
+            --work-dir "$RUNNER_TEMP/border-render" \
+            --output "$RUNNER_TEMP/border-render/report.json"
+          python3 -m scripts.render_challenge execute \
+            --work-dir "$RUNNER_TEMP/border-render" \
+            --output "$RUNNER_TEMP/border-render/report.json" \
+            --bwrap "$PALOMAR_BWRAP" \
+            --renderer-commit 65f0154ed776cd26c224254aa57b379137f28b0d \
+            --bwrap-source-tag v0.12.0 --workflow-url "$WORKFLOW_URL"
+      - name: Require successful sanitized rendering with size margin
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          work = Path(os.environ['RUNNER_TEMP']) / 'border-render'
+          report = json.loads((work / 'report.json').read_text())
+          assert report['status'] == 'pass', report
+          assert report['source']['commit'] == os.environ['SOURCE_COMMIT']
+          assert report['renderer_commit'] == '65f0154ed776cd26c224254aa57b379137f28b0d'
+          pages = list((work / 'result').rglob('Challenge/index.html'))
+          assert len(pages) == 1, pages
+          size = pages[0].stat().st_size
+          assert size < 2 * 1024 * 1024, ('render margin too small', size)
+          print('Exact committed Challenge passed official Linux rendering:', size, 'bytes')
+          PY
+      - name: Preserve bounded rendering evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: challenge-render-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/border-render/report.json
+            ${{ runner.temp }}/border-render/result
+          if-no-files-found: error
+          retention-days: 30
