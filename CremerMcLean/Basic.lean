@@ -288,7 +288,73 @@ theorem bic_of_good_lotteries
     (K : Real) (hK : V / delta + 1 <= K) :
     IsBIC pi v (cmAlloc v hn) (cmPay v hn K c) ∧
     (forall i : Fin n, forall t : T i,
-      interimUtil pi v (cmAlloc v hn) (cmPay v hn K c) i t t = 0) := sorry
+      interimUtil pi v (cmAlloc v hn) (cmPay v hn K c) i t t = 0) := by
+  classical
+  have _ := hpi_sum
+  have _ := hv
+  have othersOf_join (i : Fin n) (r : T i) (s : Others i) :
+      othersOf i (joinTypes i r s) = s := by
+    funext j
+    exact joinTypes_other i r s j.val j.property
+  let A (i : Fin n) (t r : T i) : Real :=
+    ∑ s : Others i, condDist pi i t s *
+      (cmAlloc v hn i (joinTypes i r s) *
+        (v i (joinTypes i t s) - v i (joinTypes i r s)))
+  let E (i : Fin n) (t r : T i) : Real :=
+    ∑ s : Others i, condDist pi i t s * c i r s
+  have utility (i : Fin n) (t r : T i) :
+      interimUtil pi v (cmAlloc v hn) (cmPay v hn K c) i t r =
+        A i t r - K * E i t r := by
+    calc
+      interimUtil pi v (cmAlloc v hn) (cmPay v hn K c) i t r =
+          ∑ s : Others i,
+            (condDist pi i t s *
+              (cmAlloc v hn i (joinTypes i r s) *
+                (v i (joinTypes i t s) - v i (joinTypes i r s))) -
+              K * (condDist pi i t s * c i r s)) := by
+        unfold interimUtil cmPay
+        apply Finset.sum_congr rfl
+        intro s _
+        rw [joinTypes_self, othersOf_join]
+        ring
+      _ = A i t r - K * E i t r := by
+        rw [Finset.sum_sub_distrib, ← Finset.mul_sum]
+  have truthful (i : Fin n) (t : T i) :
+      interimUtil pi v (cmAlloc v hn) (cmPay v hn K c) i t t = 0 := by
+    rw [utility]
+    simp only [A, sub_self, mul_zero, Finset.sum_const_zero, E, hLot0]
+  have gain_le (i : Fin n) (t r : T i) : A i t r ≤ V := by
+    calc
+      A i t r ≤ ∑ s : Others i, condDist pi i t s * V := by
+        apply Finset.sum_le_sum
+        intro s _
+        have hd : v i (joinTypes i t s) - v i (joinTypes i r s) ≤ V :=
+          (le_abs_self _).trans (hVbound i t r s)
+        have hq : cmAlloc v hn i (joinTypes i r s) *
+            (v i (joinTypes i t s) - v i (joinTypes i r s)) ≤ V := by
+          calc
+            _ ≤ cmAlloc v hn i (joinTypes i r s) * V :=
+              mul_le_mul_of_nonneg_left hd (cmAlloc_nonneg v hn i _)
+            _ ≤ 1 * V :=
+              mul_le_mul_of_nonneg_right (cmAlloc_le_one v hn i _) hV
+            _ = V := one_mul V
+        exact mul_le_mul_of_nonneg_left hq
+          (condDist_nonneg pi i t (fun u => (hpi_pos u).le) s)
+      _ = V := by
+        rw [← Finset.sum_mul, condDist_sum pi i t hpi_pos, one_mul]
+  have hKbound : V / delta ≤ K := by linarith
+  have hKnonneg : 0 ≤ K := (div_nonneg hV hdelta.le).trans hKbound
+  have payment_ge (i : Fin n) (t r : T i) (h : t ≠ r) : V ≤ K * E i t r := by
+    have hE : delta ≤ E i t r := hLotPos i r t h
+    exact ((div_le_iff₀ hdelta).mp hKbound).trans
+      (mul_le_mul_of_nonneg_left hE hKnonneg)
+  refine ⟨?_, truthful⟩
+  intro i t r
+  by_cases h : t = r
+  · subst r
+    exact le_rfl
+  · rw [utility, truthful]
+    exact sub_nonpos.mpr ((gain_le i t r).trans (payment_ge i t r h))
 
 theorem full_extraction
     (pi : Profile -> Real) (hpi_pos : forall t, 0 < pi t)
