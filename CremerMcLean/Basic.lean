@@ -366,7 +366,132 @@ theorem full_extraction
       IsEfficient v hn (cmAlloc v hn) ∧
       IsBIC pi v (cmAlloc v hn) (cmPay v hn K c) ∧
       IsInterimIR pi v (cmAlloc v hn) (cmPay v hn K c) ∧
-      FullSurplus pi v (cmAlloc v hn) (cmPay v hn K c) := sorry
+      FullSurplus pi v (cmAlloc v hn) (cmPay v hn K c) := by
+  classical
+  choose x hx0 hxpos using separating_lottery pi hpi_pos hpi_sum hCI
+  have othersOf_join (i : Fin n) (r : T i) (s : Others i) :
+      othersOf i (joinTypes i r s) = s := by
+    funext j
+    exact joinTypes_other i r s j.val j.property
+  let V : ℝ := ∑ i : Fin n, ∑ t : T i, ∑ r : T i, ∑ s : Others i,
+    |v i (joinTypes i t s) - v i (joinTypes i r s)|
+  have hV : 0 ≤ V := by
+    exact Finset.sum_nonneg fun i _ => Finset.sum_nonneg fun t _ =>
+      Finset.sum_nonneg fun r _ => Finset.sum_nonneg fun s _ => abs_nonneg _
+  have hVbound (i : Fin n) (t r : T i) (s : Others i) :
+      |v i (joinTypes i t s) - v i (joinTypes i r s)| ≤ V := by
+    calc
+      _ ≤ ∑ u : Others i, |v i (joinTypes i t u) - v i (joinTypes i r u)| :=
+        Finset.single_le_sum
+          (f := fun u : Others i => |v i (joinTypes i t u) - v i (joinTypes i r u)|)
+          (fun u _ => abs_nonneg _) (Finset.mem_univ s)
+      _ ≤ ∑ a : T i, ∑ u : Others i,
+          |v i (joinTypes i t u) - v i (joinTypes i a u)| :=
+        Finset.single_le_sum
+          (f := fun a : T i => ∑ u : Others i,
+            |v i (joinTypes i t u) - v i (joinTypes i a u)|)
+          (fun a _ => Finset.sum_nonneg fun u _ => abs_nonneg _) (Finset.mem_univ r)
+      _ ≤ ∑ b : T i, ∑ a : T i, ∑ u : Others i,
+          |v i (joinTypes i b u) - v i (joinTypes i a u)| :=
+        Finset.single_le_sum
+          (f := fun b : T i => ∑ a : T i, ∑ u : Others i,
+            |v i (joinTypes i b u) - v i (joinTypes i a u)|)
+          (fun b _ => Finset.sum_nonneg fun a _ =>
+            Finset.sum_nonneg fun u _ => abs_nonneg _) (Finset.mem_univ t)
+      _ ≤ V := by
+        apply Finset.single_le_sum (s := Finset.univ)
+          (f := fun j : Fin n => ∑ b : T j, ∑ a : T j, ∑ u : Others j,
+            |v j (joinTypes j b u) - v j (joinTypes j a u)|)
+        · intro j _
+          exact Finset.sum_nonneg fun b _ => Finset.sum_nonneg fun a _ =>
+            Finset.sum_nonneg fun u _ => abs_nonneg _
+        · exact Finset.mem_univ i
+  let idx : Finset (Σ i : Fin n, T i × T i) := Finset.univ
+  let val : (Σ i : Fin n, T i × T i) → ℝ := fun p =>
+    if p.2.2 ≠ p.2.1 then
+      ∑ u : Others p.1, condDist pi p.1 p.2.2 u * x p.1 p.2.1 u
+    else 1
+  have hidx : idx.Nonempty := by
+    let i₀ : Fin n := ⟨0, hn⟩
+    obtain ⟨t₀⟩ := (inferInstance : Nonempty (T i₀))
+    exact ⟨⟨i₀, (t₀, t₀)⟩, Finset.mem_univ _⟩
+  let delta : ℝ := (idx.image val).min' (hidx.image val)
+  have hdelta : 0 < delta := by
+    obtain ⟨p, _, hp⟩ := Finset.mem_image.mp (Finset.min'_mem _ (hidx.image val))
+    change val p = delta at hp
+    rw [← hp]
+    dsimp only [val]
+    split
+    · exact hxpos p.1 p.2.1 p.2.2 ‹p.2.2 ≠ p.2.1›
+    · exact one_pos
+  have hLotPos (i : Fin n) (s t : T i) (h : t ≠ s) :
+      delta ≤ ∑ u : Others i, condDist pi i t u * x i s u := by
+    have hle : delta ≤ val ⟨i, (s, t)⟩ :=
+      Finset.min'_le (idx.image val) (val ⟨i, (s, t)⟩)
+        (Finset.mem_image.mpr ⟨⟨i, (s, t)⟩, Finset.mem_univ _, rfl⟩)
+    simpa only [val, ite_eq_left h] using hle
+  let K : ℝ := V / delta + 1
+  have hK : V / delta + 1 ≤ K := le_rfl
+  obtain ⟨hbic, htruth⟩ := bic_of_good_lotteries pi hpi_pos hpi_sum v hv hn
+    x delta hdelta V hV hVbound hx0 hLotPos K hK
+  have efficient : IsEfficient v hn (cmAlloc v hn) := by
+    refine ⟨cmAlloc_sum_one v hn, ?_⟩
+    intro r i hne j
+    have hi : i = winner v hn r := by
+      by_contra h
+      simp [cmAlloc, h] at hne
+    rw [hi]
+    exact winner_is_maximal v hn r j
+  have ir : IsInterimIR pi v (cmAlloc v hn) (cmPay v hn K x) := by
+    intro i t
+    rw [htruth i t]
+  have key (i : Fin n) : ∑ r : Profile, pi r * x i (r i) (othersOf i r) = 0 := by
+    let e : T i × Others i ≃ Profile :=
+      { toFun := fun p => joinTypes i p.1 p.2
+        invFun := fun r => (r i, othersOf i r)
+        left_inv := by
+          rintro ⟨t, s⟩
+          dsimp only
+          rw [joinTypes_self, othersOf_join]
+        right_inv := joinTypes_othersOf i }
+    calc
+      _ = ∑ p : T i × Others i,
+          pi (joinTypes i p.1 p.2) * x i p.1 p.2 := by
+        rw [← Equiv.sum_comp e (fun r => pi r * x i (r i) (othersOf i r))]
+        apply Finset.sum_congr rfl
+        intro p _
+        change pi (joinTypes i p.1 p.2) *
+          x i (joinTypes i p.1 p.2 i) (othersOf i (joinTypes i p.1 p.2)) = _
+        rw [joinTypes_self, othersOf_join]
+      _ = ∑ t : T i, ∑ s : Others i, pi (joinTypes i t s) * x i t s :=
+        Fintype.sum_prod_type _
+      _ = ∑ t : T i, marginalProb pi i t *
+          ∑ s : Others i, condDist pi i t s * x i t s := by
+        apply Finset.sum_congr rfl
+        intro t _
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl
+        intro s _
+        have hp : pi (joinTypes i t s) = condDist pi i t s * marginalProb pi i t :=
+          (div_mul_cancel₀ _ (ne_of_gt (marginalProb_pos pi i t hpi_pos))).symm
+        rw [hp]
+        ring
+      _ = 0 := by simp only [hx0, mul_zero, Finset.sum_const_zero]
+  have surplus : FullSurplus pi v (cmAlloc v hn) (cmPay v hn K x) := by
+    unfold FullSurplus
+    calc
+      _ = (∑ r : Profile, pi r * ∑ i : Fin n, cmAlloc v hn i r * v i r) +
+          K * ∑ i : Fin n, ∑ r : Profile, pi r * x i (r i) (othersOf i r) := by
+        simp only [cmPay, Finset.sum_add_distrib, Finset.mul_sum, mul_add]
+        rw [Finset.sum_comm (f := fun r i => pi r * (K * x i (r i) (othersOf i r)))]
+        congr 1
+        apply Finset.sum_congr rfl
+        intro i _
+        apply Finset.sum_congr rfl
+        intro r _
+        ring
+      _ = _ := by simp only [key, Finset.sum_const_zero, mul_zero, add_zero]
+  exact ⟨K, x, efficient, hbic, ir, surplus⟩
 
 end
 
